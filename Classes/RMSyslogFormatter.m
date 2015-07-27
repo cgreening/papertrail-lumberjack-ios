@@ -49,15 +49,26 @@ static NSString * const RMAppUUIDKey = @"RMAppUUIDKey";
 
 -(NSString *) machineName
 {
-    NSString *appName = [[[NSBundle mainBundle] infoDictionary] objectForKey:(__bridge NSString *)kCFBundleExecutableKey];
-    NSString *appVersion = [[[NSBundle mainBundle] infoDictionary] objectForKey:(__bridge NSString *)kCFBundleVersionKey];
-
-    return [@[appName, appVersion] componentsJoinedByString:@"-"];
+    //We will generate and use a app-specific UUID to maintain user privacy.
+    NSString *uuid = [[NSUserDefaults standardUserDefaults] stringForKey:RMAppUUIDKey];
+    if (uuid == nil) {
+        static dispatch_once_t onceToken;
+        dispatch_once(&onceToken, ^{
+            [[NSUserDefaults standardUserDefaults] setObject:[[NSUUID UUID] UUIDString] forKey:RMAppUUIDKey];
+            [[NSUserDefaults standardUserDefaults] synchronize];
+        });
+        uuid = [[NSUserDefaults standardUserDefaults] stringForKey:RMAppUUIDKey];
+    }
+    return uuid;
 }
 
 -(NSString *) programName
 {
-    return [[[UIDevice currentDevice] identifierForVendor] UUIDString];
+    NSString *appName = [[[NSBundle mainBundle] infoDictionary] objectForKey:(__bridge NSString *)kCFBundleExecutableKey];
+    NSString *appVersion = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"];
+    NSString *buildNumber = [[[NSBundle mainBundle] infoDictionary] objectForKey:(__bridge NSString *)kCFBundleVersionKey];
+    
+    return [NSString stringWithFormat:@"%@-%@#%@", appName, appVersion, buildNumber];
 }
 
 @end
